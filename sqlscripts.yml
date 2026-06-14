@@ -1,0 +1,133 @@
+# Scripts SQL para crear el esquema del Data Warehouse Fast and Safe
+# Se ejecutan en orden al inicializar el DW por primera vez
+
+dim_fecha: |
+  CREATE TABLE IF NOT EXISTS dim_fecha (
+    key_dim_fecha     SERIAL PRIMARY KEY,
+    fecha             DATE,
+    year              INTEGER,
+    month             INTEGER,
+    day               INTEGER,
+    hour              INTEGER,
+    weekday           INTEGER,
+    quarter           INTEGER,
+    is_holiday        BOOLEAN,
+    nombre_festivo    VARCHAR(200),
+    nombre_mes        VARCHAR(20),
+    nombre_dia        VARCHAR(20),
+    es_fin_semana     BOOLEAN
+  );
+
+dim_cliente: |
+  CREATE TABLE IF NOT EXISTS dim_cliente (
+    key_dim_cliente   SERIAL PRIMARY KEY,
+    cod_cliente       INTEGER,
+    nit_cliente       VARCHAR(50),
+    nombre_cliente    VARCHAR(200),
+    sector_economico  VARCHAR(100)
+  );
+
+dim_sede: |
+  CREATE TABLE IF NOT EXISTS dim_sede (
+    key_dim_sede      SERIAL PRIMARY KEY,
+    cod_sede          INTEGER,
+    nombre_sede       VARCHAR(200),
+    direccion         VARCHAR(300),
+    ciudad            VARCHAR(100),
+    cod_cliente       INTEGER
+  );
+
+dim_mensajero: |
+  CREATE TABLE IF NOT EXISTS dim_mensajero (
+    key_dim_mensajero SERIAL PRIMARY KEY,
+    cod_mensajero     BIGINT,
+    nombre            VARCHAR(200),
+    ciudad_base       VARCHAR(100),
+    tipo_vehiculo     VARCHAR(100)
+  );
+
+dim_ciudad: |
+  CREATE TABLE IF NOT EXISTS dim_ciudad (
+    key_dim_ciudad    SERIAL PRIMARY KEY,
+    cod_ciudad        INTEGER,
+    nombre_ciudad     VARCHAR(100),
+    departamento      VARCHAR(100),
+    region            VARCHAR(100)
+  );
+
+dim_tipo_servicio: |
+  CREATE TABLE IF NOT EXISTS dim_tipo_servicio (
+    key_dim_tipo_servicio SERIAL PRIMARY KEY,
+    cod_tipo_serv     INTEGER,
+    nombre            VARCHAR(200),
+    descripcion       VARCHAR(300),
+    tiempo_max_horas  NUMERIC(5,2),
+    urgente           BOOLEAN
+  );
+
+dim_estado_servicio: |
+  CREATE TABLE IF NOT EXISTS dim_estado_servicio (
+    key_dim_estado    SERIAL PRIMARY KEY,
+    cod_estado        INTEGER,
+    nombre_estado     VARCHAR(100),
+    orden_estado      INTEGER,
+    es_estado_final   BOOLEAN
+  );
+
+dim_tipo_novedad: |
+  CREATE TABLE IF NOT EXISTS dim_tipo_novedad (
+    key_dim_tipo_novedad SERIAL PRIMARY KEY,
+    cod_tipo_novedad  INTEGER,
+    nombre            VARCHAR(200),
+    categoria         VARCHAR(100)
+  );
+
+dim_hora: |
+  CREATE TABLE IF NOT EXISTS dim_hora (
+    key_dim_hora      SERIAL PRIMARY KEY,
+    hora              INTEGER,
+    nombre_periodo    VARCHAR(50),
+    es_horario_laboral BOOLEAN
+  );
+
+hecho_servicio: |
+  CREATE TABLE IF NOT EXISTS hecho_servicio (
+    key_hecho_servicio        SERIAL PRIMARY KEY,
+    fk_fecha_solicitud        INTEGER REFERENCES dim_fecha(key_dim_fecha),
+    fk_fecha_entrega          INTEGER REFERENCES dim_fecha(key_dim_fecha),
+    fk_cliente                INTEGER REFERENCES dim_cliente(key_dim_cliente),
+    fk_sede                   INTEGER REFERENCES dim_sede(key_dim_sede),
+    fk_mensajero              INTEGER REFERENCES dim_mensajero(key_dim_mensajero),
+    fk_ciudad_origen          INTEGER REFERENCES dim_ciudad(key_dim_ciudad),
+    fk_ciudad_destino         INTEGER REFERENCES dim_ciudad(key_dim_ciudad),
+    fk_tipo_servicio          INTEGER REFERENCES dim_tipo_servicio(key_dim_tipo_servicio),
+    id_servicio               INTEGER,
+    tiempo_total_minutos      NUMERIC(10,2),
+    tiempo_fase_asignacion_min NUMERIC(10,2),
+    tiempo_fase_recogida_min  NUMERIC(10,2),
+    tiempo_fase_entrega_min   NUMERIC(10,2),
+    num_novedades             INTEGER
+  );
+
+hecho_transiciones_estado: |
+  CREATE TABLE IF NOT EXISTS hecho_transiciones_estado (
+    key_hecho_transicion      SERIAL PRIMARY KEY,
+    fk_fecha_transicion       INTEGER REFERENCES dim_fecha(key_dim_fecha),
+    fk_mensajero              INTEGER REFERENCES dim_mensajero(key_dim_mensajero),
+    fk_cliente                INTEGER REFERENCES dim_cliente(key_dim_cliente),
+    fk_estado_servicio        INTEGER REFERENCES dim_estado_servicio(key_dim_estado),
+    fk_ciudad_origen          INTEGER REFERENCES dim_ciudad(key_dim_ciudad),
+    fk_ciudad_destino         INTEGER REFERENCES dim_ciudad(key_dim_ciudad),
+    fk_sede                   INTEGER REFERENCES dim_sede(key_dim_sede),
+    id_servicio               INTEGER,
+    timestamp_estado          TIMESTAMP,
+    duracion_en_estado_min    NUMERIC(10,2)
+  );
+
+resumen_novedades: |
+  CREATE TABLE IF NOT EXISTS resumen_novedades (
+    tipo_novedad_id       INTEGER,
+    nombre_tipo_novedad   VARCHAR(200),
+    total_ocurrencias     INTEGER,
+    servicios_afectados   INTEGER
+  );
