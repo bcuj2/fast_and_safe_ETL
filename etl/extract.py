@@ -129,6 +129,8 @@ def extract_estados_servicio_detalle(source: Engine) -> pd.DataFrame:
     """
     Extrae todas las transiciones de estado de cada servicio,
     combinando fecha y hora en un solo timestamp.
+    Se incluyen las filas de estado aunque estén marcadas como prueba,
+    porque los estados iniciales de un servicio real pueden venir así.
     """
     return pd.read_sql_query("""
         SELECT
@@ -140,7 +142,6 @@ def extract_estados_servicio_detalle(source: Engine) -> pd.DataFrame:
             (es.fecha::text || ' ' || es.hora::text)::timestamp AS timestamp_estado,
             es.observaciones
         FROM mensajeria_estadosservicio es
-        WHERE es.es_prueba = FALSE
         ORDER BY es.servicio_id, es.fecha, es.hora
     """, source)
 
